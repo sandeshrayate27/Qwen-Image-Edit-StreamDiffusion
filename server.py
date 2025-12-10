@@ -2,7 +2,7 @@
 """
 Qwen-Image-Edit-2509 API Server
 Handles GPU inference, separated from frontend
-With torch.compile optimization for ~18% speedup
+With Lightning LoRA for 2-step inference (~5.6s)
 """
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '7'
@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 torch.backends.cudnn.benchmark = True
 torch.set_float32_matmul_precision('high')
 
-app = FastAPI(title="Qwen-Image-Edit API (Optimized)")
+app = FastAPI(title="Qwen-Image-Edit API (Lightning LoRA)")
 
 # CORS for React frontend
 app.add_middleware(
@@ -43,7 +43,7 @@ is_processing = False
 class EditRequest(BaseModel):
     image: str  # Base64 encoded image
     prompt: str = "Transform into oil painting style"
-    steps: int = 4
+    steps: int = 2  # Default 2 steps with Lightning LoRA
     ref_image: str | None = None  # Optional reference image for compositing
     blend_ratio: float = 0.5
 
@@ -69,32 +69,31 @@ def load_pipeline():
 
     print(f"Model loaded! GPU Memory: {torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
-    # Apply torch.compile optimization
-    print("Compiling transformer with torch.compile (this takes 3-4 minutes on first run)...")
-    pipeline.transformer = torch.compile(
-        pipeline.transformer,
-        mode="default",
-        fullgraph=False,
+    # Load Lightning LoRA for fast 2-step inference
+    print("Loading Lightning LoRA (4-step version for 2-step inference)...")
+    pipeline.load_lora_weights(
+        "lightx2v/Qwen-Image-Lightning",
+        weight_name="Qwen-Image-Edit-Lightning-4steps-V1.0.safetensors",
     )
-    print("Compilation setup done!")
+    print("Lightning LoRA loaded!")
 
-    # Warmup (triggers actual compilation)
-    print("Warming up (first inference triggers JIT compilation)...")
+    # Warmup
+    print("Warming up...")
     dummy = Image.new('RGB', (512, 512), color='gray')
     with torch.no_grad():
-        for i in range(3):
-            print(f"  Warmup run {i+1}/3...")
+        for i in range(2):
+            print(f"  Warmup run {i+1}/2...")
             _ = pipeline(
                 image=[dummy],
                 prompt="test",
                 generator=torch.Generator(device='cuda').manual_seed(42),
                 true_cfg_scale=4.0,
                 negative_prompt=" ",
-                num_inference_steps=4,
+                num_inference_steps=2,
                 guidance_scale=1.0,
             )
     torch.cuda.synchronize()
-    print("Ready! (optimized with torch.compile)")
+    print("Ready! (Lightning LoRA, 2-step inference ~5.6s)")
 
 
 def base64_to_pil(b64_string: str) -> Image.Image:
@@ -153,7 +152,8 @@ async def health():
     return {
         "status": "ok",
         "model_loaded": pipeline is not None,
-        "optimized": "torch.compile",
+        "optimized": "Lightning LoRA (2-step)",
+        "inference_time": "~5.6s",
         "gpu_memory": f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB" if torch.cuda.is_available() else "N/A"
     }
 

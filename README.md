@@ -10,9 +10,9 @@ Inspired by StreamDiffusion and StreamDiffusion2
 | Original (28 steps) | 114.7s | 0.009 fps | 1x |
 | Optimized (4 steps) | 9.5s | 0.11 fps | 12x |
 | + torch.compile | 6.9s | 0.14 fps | 17x |
-| Optimized (2 steps) | 4.1s | 0.24 fps | 28x |
+| **Lightning LoRA (2 steps)** | **5.6s** | **0.18 fps** | **20x** |
 
-**Achieved 17-28x speedup** with torch.compile optimization
+**Achieved 20x speedup** with Lightning LoRA optimization
 
 ## Architecture
 
@@ -102,8 +102,8 @@ ngrok http 3000  # For frontend
 - 1-step inference is numerically unstable (NaN), minimum 2 steps required
 - Model size is approximately 67GB (transformer 58GB + VAE 9GB)
 - Server queues requests - only one GPU inference at a time
-- First startup takes 3-4 minutes for torch.compile JIT compilation
-- torch.compile provides ~27% speedup after warmup
+- Lightning LoRA (lightx2v/Qwen-Image-Lightning) provides stable 5.6s inference
+- torch.compile is incompatible with LoRA (causes recompilation issues)
 
 ## Acknowledgements
 
@@ -112,6 +112,7 @@ This project builds upon the following excellent works:
 - **[StreamDiffusionV2](https://streamdiffusionv2.github.io/)** - A streaming system for dynamic and interactive video generation
 - **[StreamDiffusion](https://github.com/cumulo-autumn/StreamDiffusion)** - Pipeline-level solution for real-time interactive generation
 - **[Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509)** - Image editing model by Qwen team
+- **[Qwen-Image-Lightning](https://huggingface.co/lightx2v/Qwen-Image-Lightning)** - Lightning LoRA for fast 2-step inference
 
 ## Citation
 
