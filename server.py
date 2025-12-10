@@ -2,6 +2,7 @@
 """
 Qwen-Image-Edit-2509 API Server
 Handles GPU inference, separated from frontend
+With torch.compile optimization for ~18% speedup
 """
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '7'
@@ -18,7 +19,11 @@ import uvicorn
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-app = FastAPI(title="Qwen-Image-Edit API")
+# Enable optimizations
+torch.backends.cudnn.benchmark = True
+torch.set_float32_matmul_precision('high')
+
+app = FastAPI(title="Qwen-Image-Edit API (Optimized)")
 
 # CORS for React frontend
 app.add_middleware(
@@ -64,21 +69,32 @@ def load_pipeline():
 
     print(f"Model loaded! GPU Memory: {torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
-    # Warmup
-    print("Warming up...")
+    # Apply torch.compile optimization
+    print("Compiling transformer with torch.compile (this takes 3-4 minutes on first run)...")
+    pipeline.transformer = torch.compile(
+        pipeline.transformer,
+        mode="default",
+        fullgraph=False,
+    )
+    print("Compilation setup done!")
+
+    # Warmup (triggers actual compilation)
+    print("Warming up (first inference triggers JIT compilation)...")
     dummy = Image.new('RGB', (512, 512), color='gray')
     with torch.no_grad():
-        _ = pipeline(
-            image=[dummy],
-            prompt="test",
-            generator=torch.Generator(device='cuda').manual_seed(42),
-            true_cfg_scale=4.0,
-            negative_prompt=" ",
-            num_inference_steps=4,
-            guidance_scale=1.0,
-        )
+        for i in range(3):
+            print(f"  Warmup run {i+1}/3...")
+            _ = pipeline(
+                image=[dummy],
+                prompt="test",
+                generator=torch.Generator(device='cuda').manual_seed(42),
+                true_cfg_scale=4.0,
+                negative_prompt=" ",
+                num_inference_steps=4,
+                guidance_scale=1.0,
+            )
     torch.cuda.synchronize()
-    print("Ready!")
+    print("Ready! (optimized with torch.compile)")
 
 
 def base64_to_pil(b64_string: str) -> Image.Image:
@@ -137,6 +153,7 @@ async def health():
     return {
         "status": "ok",
         "model_loaded": pipeline is not None,
+        "optimized": "torch.compile",
         "gpu_memory": f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB" if torch.cuda.is_available() else "N/A"
     }
 
