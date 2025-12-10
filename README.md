@@ -100,3 +100,53 @@ ngrok http 3000  # For frontend
 - 1-step inference is numerically unstable (NaN), minimum 2 steps required
 - Model size is approximately 67GB (transformer 58GB + VAE 9GB)
 - Server queues requests - only one GPU inference at a time
+
+## Acknowledgements
+
+This project builds upon the following excellent works:
+
+- **[StreamDiffusionV2](https://streamdiffusionv2.github.io/)** - A streaming system for dynamic and interactive video generation
+- **[StreamDiffusion](https://github.com/cumulo-autumn/StreamDiffusion)** - Pipeline-level solution for real-time interactive generation
+- **[Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509)** - Image editing model by Qwen team
+
+## Citation
+
+If you use this project, please cite the following works:
+
+### StreamDiffusionV2
+```bibtex
+@article{feng2025streamdiffusionv2,
+  title={StreamDiffusionV2: A Streaming System for Dynamic and Interactive Video Generation},
+  author={Feng, Tianrui and Li, Zhi and Yang, Shuo and Xi, Haocheng and Li, Muyang and Li, Xiuyu and Zhang, Lvmin and Yang, Keting and Peng, Kelly and Han, Song and others},
+  journal={arXiv preprint arXiv:2511.07399},
+  year={2025}
+}
+```
+
+### StreamDiffusion
+```bibtex
+@article{kodaira2023streamdiffusion,
+  title={StreamDiffusion: A Pipeline-level Solution for Real-time Interactive Generation},
+  author={Akio Kodaira and Chenfeng Xu and Toshiki Hazama and Takanori Yoshimoto and Kohei Ohno and Shogo Mitsuhori and Soichi Sugano and Hanying Cho and Zhijian Liu and Kurt Keutzer},
+  year={2023},
+  eprint={2312.12491},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV}
+}
+```
+
+### Qwen-Image
+```bibtex
+@misc{wu2025qwenimagetechnicalreport,
+  title={Qwen-Image Technical Report},
+  author={Wu, Chenfei and Li, Jiahao and Zhou, Jingren and others},
+  year={2025},
+  eprint={2508.02324},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV}
+}
+```
+
+## License
+
+Apache License 2.0
